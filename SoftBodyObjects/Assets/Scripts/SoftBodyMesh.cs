@@ -8,9 +8,9 @@ public class SoftBodyMesh
     Mesh mesh;
     MeshFilter meshFilter;
 
-    Vector3[] newVertices;
-    Vector2[] newUV;
-    int[] newTriangles;
+    public Vector3[] vertices;
+    public Vector2[] UV;
+    public int[] triangles;
 
     public SoftBodyMesh(MeshFilter meshFilter, Mesh mesh = null)
     {
@@ -27,7 +27,7 @@ public class SoftBodyMesh
 
     }
 
-    public Vector3[] GenerateMeshVerticesFromShape(Vector3[] pVertices)
+    public Vector3[] GenerateMeshVerticesFromShape(Vector3[] pVertices, int fillFactor)
     {
         
 
