@@ -24,17 +24,14 @@ public class SoftBodyObjectEditor : Editor
     //properties
     SerializedProperty
         massPointProperties,
-        springProperties,
-        massPoints,
-        springs;
+        springProperties;
 
     bool editMode = false;
-    bool showPointGrid = false;
 
 
     private void OnEnable()
     {
-        vertices = serializedObject.FindProperty("polygon");
+        vertices = serializedObject.FindProperty("vertices");
 
         fillFactor = serializedObject.FindProperty("fillFactor");
 
@@ -45,9 +42,6 @@ public class SoftBodyObjectEditor : Editor
 
         massPointProperties = serializedObject.FindProperty("massPointProperties");
         springProperties = serializedObject.FindProperty("springProperties");
-
-        massPoints = serializedObject.FindProperty("massPoints");
-        springs = serializedObject.FindProperty("springs");
     }
 
     public override void OnInspectorGUI()
@@ -63,41 +57,12 @@ public class SoftBodyObjectEditor : Editor
         if (GUILayout.Button("Edit", layoutOptions))
         {
             editMode = !editMode;
-            SceneView.RepaintAll();
         }
-        if (sb.SB_Mesh.initialized)
+        layoutOptions[0] = GUILayout.Width(75);
+        if(GUILayout.Button("Show Point Grid", layoutOptions))
         {
-            string text = "Show Grid";
-            if (showPointGrid)
-            {
-                text = "Hide Grid";
-            }
-            layoutOptions[0] = GUILayout.Width(75);
-            if (GUILayout.Button(text, layoutOptions))
-            {
-                showPointGrid = !showPointGrid;
-                SceneView.RepaintAll();
-            }
-            layoutOptions[0] = GUILayout.Width(115);
-            if (GUILayout.Button("Regenerate Mesh", layoutOptions))
-            {
-                sb.GenerateMesh();
-            }
-        }
-        else
-        {
-            layoutOptions[0] = GUILayout.Width(115);
-            if (GUILayout.Button("Generate Mesh", layoutOptions))
-            {
-                sb.GenerateMesh();
-            }
-        }
 
-        if(GUILayout.Button("Freeze Point", layoutOptions))
-        {
-            sb.massPoints[0].properties.isStatic = true;
         }
-        
         GUILayout.EndHorizontal();
         
         GUILayout.Space(10);
@@ -105,7 +70,6 @@ public class SoftBodyObjectEditor : Editor
         EditorGUILayout.PropertyField(mass);
 
         EditorGUILayout.PropertyField(fillFactor);
-        //EditorGUILayout.Slider(sb.fillFactor, 3, 15);
 
         EditorGUILayout.PropertyField(isStatic);
         EditorGUILayout.PropertyField(roundForces);
@@ -118,51 +82,23 @@ public class SoftBodyObjectEditor : Editor
         EditorGUILayout.PropertyField(springProperties);
         GUILayout.Space(10);
 
-        EditorGUILayout.PropertyField(massPoints);
-        GUILayout.Space(10);
-
-        EditorGUILayout.PropertyField(springs);
-        GUILayout.Space(10);
-
-        if (EditorGUI.EndChangeCheck())
-        {
-            Undo.RecordObject(sb, "Changed SoftBodyObject Properties");
-            if(fillFactor.intValue != sb.fillFactor && sb.SB_Mesh.initialized)
-            {
-                if(fillFactor.intValue % 2 == 0)
-                {
-                    fillFactor.intValue++;
-                }
-                serializedObject.ApplyModifiedProperties();
-                sb.GenerateMesh();
-            }
-            else
-            {
-                serializedObject.ApplyModifiedProperties();
-            }
-            
-        }
-
-
-        EditorGUI.BeginChangeCheck();
-        serializedObject.Update();
-
         EditorGUILayout.PropertyField(vertices);
 
+        
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(sb, "Changed SoftBodyObject Properties");
-            if (sb.SB_Mesh.initialized)
-            {
-                sb.GenerateMesh();
-            }
+            serializedObject.ApplyModifiedProperties();
         }
 
         sb.OnEditorUpdate();
+        Debug.Log("Updated Object");
     }
 
     void OnSceneGUI()
     {
+        Debug.Log("DrawingPolygon");
+
         var sb = target as SoftBodyObject;
 
         EditorGUI.BeginChangeCheck();
@@ -174,23 +110,25 @@ public class SoftBodyObjectEditor : Editor
             float handleSize = HandleUtility.GetHandleSize(sb.transform.TransformPoint(sb.vertices[i])) * .05f;
             var mousePos = Helpers.GetMousePositionInEditor();
 
+            
+
+
+
 
             Vector3 max;
             Vector3 min;
 
-            
+            if (i != sb.vertices.Length - 1)
+            {
+                Handles.DrawLine(sb.transform.TransformPoint(sb.vertices[i]), sb.transform.TransformPoint(sb.vertices[i + 1]));
+            }
+            else
+            {
+                Handles.DrawLine(sb.transform.TransformPoint(sb.vertices[i]), sb.transform.TransformPoint(sb.vertices[0]));
+            }
 
             if (editMode)
             {
-                if (i != sb.vertices.Length - 1)
-                {
-                    Handles.DrawLine(sb.transform.TransformPoint(sb.vertices[i]), sb.transform.TransformPoint(sb.vertices[i + 1]));
-                }
-                else
-                {
-                    Handles.DrawLine(sb.transform.TransformPoint(sb.vertices[i]), sb.transform.TransformPoint(sb.vertices[0]));
-                }
-
                 sb.vertices[i] = sb.transform.InverseTransformPoint(Handles.FreeMoveHandle(
                 sb.transform.TransformPoint(sb.vertices[i]),
                 Quaternion.identity,
@@ -252,8 +190,6 @@ public class SoftBodyObjectEditor : Editor
                 }
                 **/
             }
-
-
             
 
         }
@@ -262,33 +198,11 @@ public class SoftBodyObjectEditor : Editor
         {
             Undo.RecordObject(sb, "Changed SoftBodyObject's Polygon");
             serializedObject.ApplyModifiedProperties();
-            sb.GenerateMesh();
             sb.OnEditorUpdate();
         }
 
-        if (showPointGrid)
-        {
-            if(sb.springs == null || sb.springs.Length == 0)
-            {
-                Debug.Log("drawing Grid");
-                Handles.color = Color.white;
-                var v = sb.GetMeshVertices();
-                var t = sb.GetMeshTriangles();
-                for (int i = 0; i < t.Length - 1; i += 3)
-                {
-                    Handles.DrawLine(sb.transform.TransformPoint(v[t[i]]), sb.transform.TransformPoint(v[t[i + 1]]));
-                    Handles.DrawLine(sb.transform.TransformPoint(v[t[i + 1]]), sb.transform.TransformPoint(v[t[i + 1]]));
-                    Handles.DrawLine(sb.transform.TransformPoint(v[t[i + 2]]), sb.transform.TransformPoint(v[t[i]]));
-                }
-            }
-            else
-            {
-                for(int i = 0; i < sb.springs.Length; i++)
-                {
-                    Handles.DrawLine(sb.transform.TransformPoint(sb.springs[i].A.position), sb.transform.TransformPoint(sb.springs[i].B.position));
-                }
-            }
-        }
+        if(editMode)
+            SceneView.RepaintAll();
     }
 
     

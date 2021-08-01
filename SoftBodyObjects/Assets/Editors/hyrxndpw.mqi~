@@ -1,0 +1,86 @@
+﻿using UnityEngine;
+using UnityEditor;
+
+[CustomEditor(typeof(SoftBodyObject))]
+public class SoftBodyObjectEditor : Editor
+{
+    //Vector3
+    SerializedProperty 
+        vertices;
+
+    //int
+    SerializedProperty
+        fillFactor;
+
+    //float
+    SerializedProperty
+        mass;
+
+    //bool
+    SerializedProperty
+        isStatic,
+        roundForces;
+
+    //properties
+    SerializedProperty
+        massPointProperties,
+        springProperties;
+
+
+    private void OnEnable()
+    {
+        vertices = serializedObject.FindProperty("vertices");
+
+        fillFactor = serializedObject.FindProperty("fillFactor");
+
+        mass = serializedObject.FindProperty("mass");
+
+        isStatic = serializedObject.FindProperty("isStatic");
+        roundForces = serializedObject.FindProperty("roundForces");
+
+        massPointProperties = serializedObject.FindProperty("massPointProperties");
+        springProperties = serializedObject.FindProperty("springProperties");
+    }
+
+    public override void OnInspectorGUI()
+    {
+        var sb = target as SoftBodyObject;
+
+        EditorGUI.BeginChangeCheck();
+        serializedObject.Update();
+
+
+        EditorGUILayout.PropertyField(fillFactor);
+
+        EditorGUILayout.PropertyField(mass);
+
+        EditorGUILayout.PropertyField(isStatic);
+        EditorGUILayout.PropertyField(roundForces);
+
+        EditorGUILayout.PropertyField(massPointProperties);
+        EditorGUILayout.PropertyField(springProperties);
+
+        EditorGUILayout.PropertyField(vertices);
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(sb, "Changed SoftBodyObject Properties");
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        sb.OnEditorUpdate();
+    }
+
+    private void OnSceneGUI()
+    {
+        var sb = target as SoftBodyObject;
+
+        Vector3[] tri = new Vector3[3];
+        tri[0] = new Vector3(0, 0, 0);
+        tri[1] = new Vector3(1, 0, 0);
+        tri[2] = new Vector3(0, 1, 0);
+
+        Handles.color = Color.green;
+        Handles.DrawAAConvexPolygon(tri);
+    }
+}
