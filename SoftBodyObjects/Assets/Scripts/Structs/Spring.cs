@@ -54,6 +54,10 @@ public class Spring
         {
             var dist = Vector2.Distance(A.position, B.position);
             var diff = (dist - properties.restLength) / properties.restLength;
+            if(Mathf.Abs(diff) < properties.restLength * 0.05)
+            {
+                //return 0;
+            }
             if (properties.squareForce)
             {
                 if (diff < 0)
@@ -84,6 +88,7 @@ public struct SpringProperties
 {
     public float stiffness;
     public float restLength;
+    [Range(0,1)]
     public float dampingFactor;
     public float maxStrength;
     public bool squareForce;

@@ -2,6 +2,7 @@ using System.Collections;
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 [Serializable]
 public class MassPoint
@@ -14,6 +15,7 @@ public class MassPoint
     public float radius;
     public Vector3 force;
     public Vector3 velocity;
+    public bool isAffectedByGravity = true;
 
     Queue<Vector3> forces = new Queue<Vector3>();
 
@@ -68,13 +70,14 @@ public class MassPoint
     {
         if (simulateForces && !properties.isStatic)
         {
-            velocity += force * deltaTime;
+            var acceleration = (force * mass) + Universe.grav;
+            velocity += acceleration * deltaTime;
             if (Mathf.Abs(velocity.x) < Universe.precision)
                 velocity = new Vector3(0f, velocity.y, velocity.z);
             if (Mathf.Abs(velocity.y) < Universe.precision)
                 velocity = new Vector3(velocity.x, 0f, velocity.z);
 
-            CollisionDetect(deltaTime);
+            //CollisionDetect(deltaTime);
 
             position += velocity * deltaTime;
         }
@@ -85,12 +88,28 @@ public class MassPoint
         force = Vector3.zero;
     }
 
-    internal void Reflect(Vector3 normal)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="normal"></param>
+    /// <param name="absorbAmount">percentange from 0-1 of how much velocity is absorbed</param>
+    /// <param name="friction"></param>
+    internal void Reflect(Vector3 normal, float normalAbsorption, float friction)
     {
+        var nA = Mathf.Clamp(normalAbsorption, 0, 1);
+        var f = Mathf.Clamp(friction, 0, 1);
+
+        
         velocity = Vector3.Reflect(velocity, normal);
+        var normalComp = Vector3.Project(velocity, normal);
+        var perpComp = Vector3.Project(velocity, new Vector3(normal.y, normal.x));
+
+        velocity -= normalComp * friction;
+        AddForce(-perpComp.normalized * friction * normalComp.magnitude);
+
     }
 
-    private void CollisionDetect(float deltaTime)
+    public void CollisionDetect(float deltaTime)
     {
         var nextPos = position + velocity * deltaTime;
         foreach (var point in massPoints)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using System.Threading.Tasks;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -82,11 +83,13 @@ public class SoftBodyObject : MonoBehaviour
             Vector3[] newMeshVertices = new Vector3[massPoints.Length];
 
             for (int i = 0; i < massPoints.Length; i++)
-            {
-                massPoints[i].AddForce(Universe.gForce * massPoints[i].mass);
                 massPoints[i].OnUpdate(Time.fixedDeltaTime, !isStatic);
+            for(int i = 0; i < massPoints.Length; i++ )
+            {
+                massPoints[i].CollisionDetect(Time.fixedDeltaTime);
                 newMeshVertices[i] = massPoints[i].position;
             }
+            
 
             SB_Mesh.vertices = newMeshVertices;
         }
@@ -202,7 +205,7 @@ public class SoftBodyObject : MonoBehaviour
 
     private void SetMassPointRadius(Spring spring)
     {
-        float dis = spring.properties.restLength / 2;
+        float dis = spring.properties.restLength / 3;
         if (dis < spring.A.radius)
             spring.A.radius = dis;
         if (dis < spring.B.radius)

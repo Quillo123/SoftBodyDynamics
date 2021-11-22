@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading.Tasks;
 
 public class PhysicsHandler : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class PhysicsHandler : MonoBehaviour
     RigidPolygon[] rigidBodies;
 
     [Range(1, 10)]
-    public float speed = 1;
+    public float gameSpeed = 1;
 
     void Start()
     {
@@ -37,13 +38,15 @@ public class PhysicsHandler : MonoBehaviour
                 rb.PhysicsUpdate(softBodies);
             }
 
+            
+
             foreach (SoftBodyObject sb in softBodies)
             {
                 sb.PhysicsUpdate();
             }
 
             //Debug.Log("Physics Update Completed");
-            yield return new WaitForSeconds((1 / speed) * Time.fixedDeltaTime);
+            yield return new WaitForSeconds((1 / gameSpeed) * Time.fixedDeltaTime);
         }
     }
 }

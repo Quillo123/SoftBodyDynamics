@@ -8,8 +8,8 @@ using System.Linq;
 [RequireComponent(typeof(MeshRenderer))]
 public class RigidPolygon : MonoBehaviour
 {
-    [Range(3, 100)]
-    public int numVertices = 3;
+    //[Range(3, 100)]
+    //public int numVertices = 3;
 
     public Vector3[] vertices { get { return polygon.vertices; } set { polygon.vertices = value; } }
 
@@ -23,6 +23,10 @@ public class RigidPolygon : MonoBehaviour
     public Color color = Color.white;
 
     public bool isPhysical = false;
+    [Range(0,1)]
+    public float friction = .2f;
+    [Range(0,1)]
+    public float normalAbsorption = 0;
 
     public Vector3 upperBound;
     public Vector3 lowerBound;
@@ -36,20 +40,8 @@ public class RigidPolygon : MonoBehaviour
 
     private void OnValidate()
     {
-        if(vertices == null)
-        {
-            vertices = new Vector3[numVertices];
 
-            for(int i = 0; i < numVertices; i++)
-            {
-                float angle = i * (360f / numVertices);
-                vertices[i] = new Vector3(
-                    transform.position.x + 5 * Mathf.Cos(Mathf.Deg2Rad * angle), 
-                    transform.position.y + 5 * Mathf.Sin(Mathf.Deg2Rad * angle)
-                    );
-            }
-
-        }
+        UpdateVertices();
         GetBounds();
 
         meshFilter = GetComponent<MeshFilter>();
@@ -59,9 +51,34 @@ public class RigidPolygon : MonoBehaviour
         SB_Mesh.GenerateMeshVerticesFromShape(vertices, 2);
     }
 
+    private void UpdateVertices()
+    {
+        if(vertices == null)
+        {
+            vertices = new Vector3[vertices.Length];
+
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                float angle = i * (360f / vertices.Length);
+                vertices[i] = new Vector3(
+                    transform.position.x + 5 * Mathf.Cos(Mathf.Deg2Rad * angle),
+                    transform.position.y + 5 * Mathf.Sin(Mathf.Deg2Rad * angle)
+                    );
+            }
+        }
+
+    }
+
     public void OnStart()
     {
+        UpdateVertices();
         GetBounds();
+
+        meshFilter = GetComponent<MeshFilter>();
+
+        SB_Mesh = new SoftBodyMesh(meshFilter);
+
+        SB_Mesh.GenerateMeshVerticesFromShape(vertices, 2);
     }
 
     private void Update()
@@ -81,7 +98,7 @@ public class RigidPolygon : MonoBehaviour
                 {
                     if (pos.y < upperBound.y && pos.y > lowerBound.y)
                     {
-                        Debug.Log("Collisions");
+                        Debug.Log("bound-collision");
                         HandleCollision(point, sb.transform);
                     }
                 }
@@ -98,6 +115,7 @@ public class RigidPolygon : MonoBehaviour
         {
             if (hitObject.Count() % 2 != 0)
             {
+                Debug.Log("Collision");
                 Vector3 closestPoint = GetClosestPoint(pos);
                 var lineHit = Physics2D.Raycast(pos, closestPoint - pos);
                 point.position = objectTransform.InverseTransformPoint(closestPoint); //transform.InverseTransformPoint(closestPoint);
@@ -106,7 +124,7 @@ public class RigidPolygon : MonoBehaviour
                     point.velocity = new Vector3(0f, point.velocity.y, point.velocity.z);
                 if (Mathf.Abs(point.velocity.y) < Universe.precision * 100)
                     point.velocity = new Vector3(point.velocity.x, 0f, point.velocity.z);
-                point.Reflect(lineHit.normal);
+                point.Reflect(lineHit.normal, normalAbsorption, friction);
             }
         }
         
